@@ -32,8 +32,8 @@ int main(int argc, char * argv []){
 	int flag = 0;
 	int j = 0;
 	while( j < strlen(argv[2])){
-  		flag = isdigit(tmp[j]);
-  		if (isDigit == 0){
+  		flag = isdigit(argv[2][j]);
+  		if (flag == 0){
   			printf("Port should be a number. Check input.");
   			exit(FAILURE);
   		}
