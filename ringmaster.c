@@ -23,7 +23,7 @@ for(int i = 1; i <= 3; i++){
 	while( j < strlen(argv[i])){
   		flag = isdigit(argv[i][j]);
   		if (flag == 0){
-  			printf("Inputs should be numbers. Check input.\n");
+  			printf("Input parameters should be numbers. Check input.\n");
   			return EXIT_FAILURE;
   		}
   		j++;
@@ -52,7 +52,12 @@ return 0;
 
 int main(int argc, char * argv[]){
 
+POTATO potato; //Potato instantiation
 
+int connection_initiate; //signal for connection with neighbours
+int pass_potato; // signal for passing the potato
+int game_end; //signal for ending the game
+int random_player; //random player selection using rand()
 
 if(argc != 4){
 		printf("Correct format is : ringmaster <port_num> <num_players> <num_hops>\n");
@@ -60,18 +65,24 @@ if(argc != 4){
 }
 
 int error = check_error_input(argv);
+
 if(!error){
+
+//Get the values from the command line
 int port_num = atoi(argv[1]);
 int num_of_players = atoi(argv[2]);
 int num_of_hops = atoi(argv[3]);
+
+//Set the number of hops
+potato.hop_num = num_of_hops;
+
+srand((unsigned int)time(NULL) + num_of_players); //seed
+
 int player_port_fd[num_of_players][2]; //For storing player file-descriptor and port-number
-char player_hostname[num_of_players][128]; //For storing player host-name
+char player_hostname[num_of_players][64]; //For storing player host-name
 struct sockaddr_storage socket_addr;
 socklen_t socket_addr_len;
 
-
-
-srand((unsigned int)time(NULL) + num_of_players);
 
 //Initialization
 printf("Potato Ringmaster\n");
@@ -97,9 +108,8 @@ if (host_info == NULL) {
  memset(&hostsocket_info, 0, sizeof(hostsocket_info));
  hostsocket_info.ai_protocol = 0;
  hostsocket_info.ai_flags    = AI_PASSIVE;
- hostsocket_info.ai_family   = AF_INET;
  hostsocket_info.ai_socktype = SOCK_STREAM;
-
+ hostsocket_info.ai_family   = AF_INET;
  status = getaddrinfo(hostname, argv[1], &hostsocket_info, &hostsocket_info_list);
 
  //create a socket
@@ -120,12 +130,14 @@ if(status < 0){
     return EXIT_FAILURE;
 }  
 
+ //Bind system call
  status = bind(socket_fd, hostsocket_info_list->ai_addr, hostsocket_info_list->ai_addrlen);
   if (status == -1) {
     printf("Error: cannot bind socket\n");
     return EXIT_FAILURE;
   } 
 
+ //Listen on the socket
  status = listen(socket_fd, num_of_players);
   if (status == -1) {
     printf("Error: cannot listen on socket\n");
@@ -133,6 +145,7 @@ if(status < 0){
   }
 
 int i = 0;
+
 while ( i < num_of_players){
 
 socket_addr_len = sizeof(socket_addr);
@@ -167,21 +180,113 @@ send(player_port_fd[i][0], (char*)&num_of_hops, sizeof(int), 0);
 send(player_port_fd[i][0], (char*)&i, sizeof(int), 0);
 
 
-//Send left and right neighbour information
-
-
-}
-
+i++; //incrr
 }
 
 
+//Need to send portnumber and host-name of the neighbours
+int j = 0;
+while(j < num_of_players){
+
+  if(j == 0){
+    send(player_port_fd[j][0], (char *)&player_port_fd[num_of_players-1][1],sizeof(int), 0);
+    send(player_port_fd[j][0], (char*)&player_hostname[num_of_players-1], 64, 0);
+  }
+  else{
+    send(player_port_fd[j][0], (char *)&player_port_fd[j+1][1],sizeof(int), 0);
+    send(player_port_fd[j][0], (char*)&player_hostname[j+1], 64, 0);
+  }
+  j++;
+}
 
 
+//Send signal to initiate connections between the neighbouring players
+
+connection_initiate = 1;
+for(int i = 0; i < num_of_players; i++){
+  send(player_port_fd[i][0], (char *)&(connection_initiate),sizeof(int), 0);
+}
+
+//Now everything is set, we can begin the game
+
+if(num_of_hops == 0){
+   game_end = 1;
+  
+  for(int i = 0; i < num_of_players; i++){
+      send(player_port_fd[i][0], (char *)&(game_end),sizeof(int), 0);
+      close(player_port_fd[i][0]);
+}
+  close(socket_fd); //close the TCP socket
+  return EXIT_SUCCESS;
+}
 
 
+else{
+
+    random_player = ((rand()) % num_of_players);
+    printf("Ready to start the game, sending potato to player %d\n", random_player );
+    
+    pass_potato = 1;
+    send(player_port_fd[random_player][0], (char *)&pass_potato, sizeof(int), 0);
+    int temp = sizeof(char)*(4 * num_of_hops);
+ 
+    //Send the potato to the random player
+
+    memset(potato.hop_trace, '\0', temp);
+    strcat(potato.hop_trace, "");
+    //Convert the struct into buffer
+    char buffer[temp + sizeof(int)];
+    memcpy(buffer, &potato, temp + sizeof(int));
+    send(player_port_fd[random_player][0], buffer, temp + sizeof(int), 0);
+
+    //The code is based on the linux manual instructions
+ 
+    int max_file_descriptor = player_port_fd[0][0]; //Initialize the max-file descriptor as the first one
+    fd_set read_file_descriptors;
+    FD_ZERO(&read_file_descriptors);
 
 
+    //Determine max_file_descriptor to use the select system() call
+    int k = 0;
+    while( k < num_of_players){
+      FD_SET(player_port_fd[i][0], &read_file_descriptors);
+      if(player_port_fd[i][0] > max_file_descriptor)
+          max_file_descriptor = player_port_fd[i][0];
+      k++;
+  }
 
+  //monitor the file-descriptors
+  select(max_file_descriptor + 1, &read_file_descriptors, NULL, NULL, NULL);
+
+  int index = 0;
+  while(index < num_of_players){
+     if (FD_ISSET(player_port_fd[i][0], &read_file_descriptors)){
+        char received_buffer[temp + sizeof(int)];
+        recv(player_port_fd[i][0], received_buffer, temp + sizeof(int), 0);
+        memcpy(&potato, received_buffer, temp + sizeof(int));
+     }
+
+     index++;
+
+  }
+
+  printf("Trace of potato:\n%s\n", potato.hop_trace);
+  
+  game_end = 1;
+  for(int i = 0; i < num_of_players; i++){
+      send(player_port_fd[i][0], (char *)&(game_end),sizeof(int), 0);
+      close(player_port_fd[i][0]);
+}
+
+ close(socket_fd); //close the TCP socket
+ return EXIT_SUCCESS;
 
 
 }
+   }
+
+}
+
+
+
+
