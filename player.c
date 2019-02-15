@@ -11,6 +11,8 @@
 #include <netdb.h>
 #include <time.h>
 
+#define PORTBEGIN 51097
+#define PORTEND 51015
 
 //Input Error Checking
 int check_error_input(char * argv[]){
@@ -27,8 +29,8 @@ int check_error_input(char * argv[]){
   	}
  
 
- if (atoi(argv[2]) < 1024) {
-    printf("Please input valid port number above 1024.\n");
+ if (atoi(argv[1]) < 1024 || atoi(argv[1]) > 65535) {
+    printf("Please input valid port number above 1024 and below 65535.\n");
     return EXIT_FAILURE;
   }
 
@@ -48,12 +50,12 @@ int main(int argc, char * argv[]){
 
 	int error = check_error_input(argv);
 	int ring_master_port;
+	int player_portnum;
 
 
 	if(!error){
 
-			//Get ring-master information
-
+		  //Get ring-master information
 		  struct hostent * ring_master = gethostbyname(argv[1]);
 		  if(!ring_master){
 		  	printf("Ring Master: host not found");
@@ -69,14 +71,62 @@ int main(int argc, char * argv[]){
 		  memset(&host_info, 0, sizeof(host_info));
 		  host_info.ai_family   = AF_UNSPEC;
           host_info.ai_socktype = SOCK_STREAM;
-          int status = getaddrinfo(argv[1], argv[2], &host_info, &host_info_list);
+          
+           int status = getaddrinfo(argv[1], argv[2], &host_info, &host_info_list);
+           if (status != 0) {
+   				 perror("getaddrinfo()");
+                 return EXIT_FAILURE;
+  			}
            
           //Open the socket to the ringmaster
-          int ring_master_sfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
-          if(ring_master_sfd == -1){
+          int socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
+          if(socket_fd == -1){
           	printf("Error: cannot create socket.\n");
     		return EXIT_FAILURE;
           }
+
+          //start connection
+          status = connect(socket_fd, host_info_list->ai_addr,host_info_list->ai_addrlen);
+          if(status < 0){
+          	printf("Cannot connect");
+          	return EXIT_FAILURE;
+          }
+
+
+       //Create a socket for the player 
+       char playername[64];
+       gethostname(playername, sizeof(playername));
+       struct hostent * player_detail = gethostbyname(playername);
+
+       int player_socketfd = socket(AF_INET, SOCK_STREAM, 0);
+       if(player_socketfd < 0){
+       	printf("Error: Cannot create socket.\n");
+       	return EXIT_FAILURE;
+       }
+
+       struct sockaddr_in player_socket;
+       player_socket.sin_family = AF_INET;
+
+       for(int i = PORTBEGIN; i <= PORTEND; i++ ){
+       		player_socket_detail.sin_port = htons(i);
+       		memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
+       		int status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
+       		if(!status)
+       			break;
+       	}
+
+  struct sockaddr_in buff;
+  socklen_t len = sizeof(sockaddr_in);
+  if (!getsockname(player_socketfd, (struct sockaddr*)&buff, &len)) {
+    	player_portnum = ntohs(buff.sin_port);
+  }
+
+
+
+
+
+
+
 
 
 
