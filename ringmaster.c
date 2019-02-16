@@ -78,9 +78,9 @@ int num_of_hops = atoi(argv[3]);
 srand((unsigned int)time(NULL)); //seed
 int player_port_fd[num_of_players][2]; //For storing player file-descriptor and port-number
 char player_hostname[num_of_players][64]; //For storing player host-name
-
-struct sockaddr_storage socket_addr;
+struct sockaddr_in socket_addr;
 socklen_t socket_addr_len;
+struct hostent * player_detail;
 
 
 //Initialization
@@ -158,15 +158,12 @@ else{
 printf("Player %d is ready to play\n", i);
 }
 
-//Store player hostname
-char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
-getnameinfo((struct sockaddr *)&socket_addr, socket_addr_len, hbuf, sizeof(hbuf), sbuf,
-                       sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV);
-memset(hbuf, 0x00, sizeof(hbuf));
-memset(sbuf, 0x00, sizeof(sbuf));
-strcpy(player_hostname[i], hbuf);
+memset(player_hostname[i], '\0', 64);
+player_detail = gethostbyaddr((char*)&socket_addr.sin_addr, sizeof(struct in_addr), AF_INET);
+strcpy(player_hostname[i], player_detail->h_name);
 
-//Need to receive player port number and File descriptor
+//printf("%s\n", player_hostname[i]);
+
 recv(incoming_connection_fd, &port_number_player, sizeof(int), 0);
 player_port_fd[i][0] = incoming_connection_fd;
 player_port_fd[i][1] = port_number_player;
@@ -211,8 +208,8 @@ for (int i = 0; i < num_of_players; i++){
 	int ready = 0;
 	int player_ready_status = recv(player_port_fd[i][0],&ready, sizeof(int), 0 );
 	if(player_ready_status == -1){
-		printf("Player %d is not ready. Restart the game again.", i);
-		EXIT_FAILURE;
+		printf("Player %d is not ready. Restart the game again.\n", i);
+		return EXIT_FAILURE;
 	}
 }
 
