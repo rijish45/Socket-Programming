@@ -55,6 +55,7 @@ int main(int argc, char * argv[]){
 	int ring_master_port;
   	int id;
   	int ack = 0;
+  	int receive_signal = 0;
   	int status;
 	int player_portnum;
 	int num_of_hops;
@@ -252,7 +253,7 @@ int main(int argc, char * argv[]){
    		reading_fd = left_neighbour_sfd;
 
   
- 	int receive_signal = 0;
+ 	
  	recv(reading_fd, &receive_signal, sizeof(int), 0);
 
  	if(receive_signal = 4500){
@@ -293,27 +294,55 @@ int main(int argc, char * argv[]){
  	else{
 
  			int random = rand() % 2;
- 			if(random == 0){
+ 			if(random == 0)
  				destination_fd = left_neighbour_sfd;
- 			}
- 			else if (random == 1){
+ 			else if (random == 1)
  				destination_fd == right_neighbour_sfd;
- 			}
+ 	
 
 
- 	}
+ 			if(id == 0){
+ 				if(random == 1)
+ 					neighbour_id = id + 1;
+ 				else if (random == 0) 
+          	  		neighbour_id = num_of_players - 1;
+          	}	
 
 
+          else if(id == num_of_players - 1) {
+          	if (random == 0)
+            	neighbour_id = id - 1;
+          	else if (random == 1)  // right neighbor
+            	neighbor_id = 0;
+         }
 
+          else {
+          	if (random == 1) // right neighbor
+            neighbour_id = id + 1;
+          	else if(rand_neighbor == 0) // left neighbor
+    	        neighbor_id = player_id - 1;
+    		}
+          
+        	printf("Sending potato to %d \n", neighbour_id);
+        	receive_signal = 5500;
+        	send(destination_fd, (char*)&receive_signal, sizeof(signal), 0);
+        	recv(destination_fd, &ack, sizeof(ack), 0);
 
+        	continue;
 
+		}
 
-
-
- }
+	}
 
  
   }
+
+
+  close(right_neighbour_sfd);
+  close(player_socketfd);
+  close(socket_fd);
+  
+  return EXIT_SUCCESS;
 
 }
 
