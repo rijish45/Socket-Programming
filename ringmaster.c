@@ -244,14 +244,14 @@ else{
     recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
    
     //Set the number of hops
-	  hot_potato.hop_num = num_of_hops;
+	hot_potato.hop_num = num_of_hops;
     hot_potato.current_hop = 0;
     struct potato buffer[1];
     memset(&buffer[0], 0, sizeof(buffer[0]));
 
     buffer[0] = hot_potato;
     send(player_port_fd[random_player][0], buffer, sizeof(buffer), 0);
-    ack = recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
+    recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
     
  
     int max_file_descriptor = player_port_fd[num_of_players - 1][0]; 
@@ -292,7 +292,7 @@ else{
 
   //Game is over, send signal to all players
   
-  game_end = 1;
+  game_end = 4500;
   for(int i = 0; i < num_of_players; i++){
       send(player_port_fd[i][0], (char *)&(game_end),sizeof(int), 0);
       close(player_port_fd[i][0]);
