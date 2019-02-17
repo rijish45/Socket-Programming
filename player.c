@@ -66,7 +66,7 @@ int main(int argc, char * argv[]){
   	int player_socketfd;
   	int neighbour_port;
   	char neighbour_hostname[64];
-  	memset(neighbour_hostname, "\0", 64);
+  	memset(neighbour_hostname, '\0', 64);
   	int right_neighbour_sfd;
   	int left_neighbour_sfd;
   	char playername[64];
@@ -203,8 +203,8 @@ int main(int argc, char * argv[]){
   }
 
   neighbour_socket_detail.sin_port = htons(neighbour_port);
-  neighbour_socket_info.sin_family = AF_INET;
-  memcpy(&neighbour_socket_info.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
+  neighbour_socket_detail.sin_family = AF_INET;
+  memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 
   status = connect(right_neighbour_sfd, (struct sockaddr*)&neighbour_socket_detail, sizeof(neighbour_socket_detail));
   if(status == -1){
@@ -243,7 +243,7 @@ int main(int argc, char * argv[]){
  		perror("select()");
  	}
 
-   in reading_fd;
+   int reading_fd;
 
    if(FD_ISSET(socket_fd, &temporary_fds))
 		reading_fd = socket_fd;
@@ -256,7 +256,7 @@ int main(int argc, char * argv[]){
  	
  	recv(reading_fd, &receive_signal, sizeof(int), 0);
 
- 	if(receive_signal = 4500){
+ 	if(receive_signal == 4500){
  		break;
  	}
  	else{
@@ -277,7 +277,7 @@ int main(int argc, char * argv[]){
    		hot_potato.hop_num--;
 		buffer[0] = hot_potato;
 
-		if(hot_potato.num_of_hops == 0){
+		if(hot_potato.hop_num == 0){
 			printf("I'm it\n");
 			status = send(socket_fd, buffer, sizeof(buffer), 0);
 			if(status == -1){
@@ -287,8 +287,6 @@ int main(int argc, char * argv[]){
 			continue;
 		}
 
- 	}
-
 
 
  	else{
@@ -297,7 +295,7 @@ int main(int argc, char * argv[]){
  			if(random == 0)
  				destination_fd = left_neighbour_sfd;
  			else if (random == 1)
- 				destination_fd == right_neighbour_sfd;
+ 				destination_fd = right_neighbour_sfd;
  	
 
 
@@ -313,14 +311,14 @@ int main(int argc, char * argv[]){
           	if (random == 0)
             	neighbour_id = id - 1;
           	else if (random == 1)  // right neighbor
-            	neighbor_id = 0;
+            	neighbour_id = 0;
          }
 
           else {
           	if (random == 1) // right neighbor
             neighbour_id = id + 1;
-          	else if(rand_neighbor == 0) // left neighbor
-    	        neighbor_id = player_id - 1;
+          	else if(random == 0) // left neighbor
+    	        neighbour_id = id - 1;
     		}
           
         	printf("Sending potato to %d \n", neighbour_id);
@@ -338,12 +336,16 @@ int main(int argc, char * argv[]){
   }
 
 
-  close(right_neighbour_sfd);
-  close(player_socketfd);
-  close(socket_fd);
-  
-  return EXIT_SUCCESS;
 
 }
 
+
+  close(right_neighbour_sfd);
+  close(player_socketfd);
+  close(socket_fd);
+  return EXIT_SUCCESS;
+
+
+
+}
 
