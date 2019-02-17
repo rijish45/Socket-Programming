@@ -98,7 +98,7 @@ struct hostent* host_info;
 char hostname[64];
 gethostname(hostname, sizeof(hostname)); //returns hostname for current process
 host_info = gethostbyname(hostname);
-if (host_info == NULL) {
+if (!host_info) {
     fprintf(stderr, "host %s not found\n", hostname);
     return EXIT_FAILURE;
   }
@@ -111,10 +111,9 @@ if (host_info == NULL) {
  int address_status = getaddrinfo(hostname, argv[1], &hostsocket_info, &hostsocket_info_list);
 
  //create a socket
- socket_fd = socket(hostsocket_info_list->ai_family,
-                     hostsocket_info_list->ai_socktype,
-                     hostsocket_info_list->ai_protocol);
-if (socket_fd == -1) {
+ socket_fd = socket(hostsocket_info_list->ai_family, hostsocket_info_list->ai_socktype, hostsocket_info_list->ai_protocol);
+ 
+ if (socket_fd == -1) {
     printf("Error: cannot create socket.\n");
     return EXIT_FAILURE;
   }
@@ -219,7 +218,7 @@ sleep(5); //Wait for some time
 
 if(num_of_hops == 0){
   
-   game_end = 1;
+   game_end = 4500;
    for(int i = 0; i < num_of_players; i++){
       send(player_port_fd[i][0], (char *)&(game_end),sizeof(int), 0);
     }
@@ -239,17 +238,19 @@ else{
     
 
     //Send potato to the random player
-    pass_potato = 1;
+    pass_potato = 5500;
     send(player_port_fd[random_player][0], (char *)&pass_potato, sizeof(int), 0);
     int ack = 0;
     recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
    
     //Set the number of hops
 	  hot_potato.hop_num = num_of_hops;
+    hot_potato.current_hop = 0;
     struct potato buffer[1];
-    int size_of_buffer = sizeof(int) + 512 * sizeof(int);
+    memset(&buffer[0], 0, sizeof(buffer[0]));
+
     buffer[0] = hot_potato;
-    send(player_port_fd[random_player][0], buffer, size_of_buffer, 0);
+    send(player_port_fd[random_player][0], buffer, sizeof(buffer), 0);
     ack = recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
     
  
@@ -269,8 +270,7 @@ else{
   while(index < num_of_players){
      if (FD_ISSET(player_port_fd[index][0], &read_file_descriptors)){
         
-        ssize_t receive = recv(player_port_fd[index][0], buffer, size_of_buffer , 0);
-     	
+      ssize_t receive = recv(player_port_fd[index][0], buffer, sizeof(buffer) , MSG_WAITALL);
      	if (receive < 0){
 	  		printf(("Error receiving potato at the end of the game."));
 	  		return EXIT_FAILURE;
