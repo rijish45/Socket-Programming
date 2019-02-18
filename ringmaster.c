@@ -37,7 +37,7 @@ for(int i = 1; i <= 3; i++){
     return EXIT_FAILURE;
   }
 
- if (atoi(argv[2]) < 1) {
+ if (atoi(argv[2]) <= 1) {
     printf("Please input valid number for players.\n");
     return EXIT_FAILURE;
   }
@@ -165,7 +165,7 @@ printf("Player %d is ready to play\n", i);
 }
 
 recv(incoming_connection_fd, &port_number_player, sizeof(int), 0);
-printf("%d\n", port_number_player);
+//printf("%d\n", port_number_player);
 player_port_fd[i][0] = incoming_connection_fd;
 player_port_fd[i][1] = port_number_player;
 
@@ -176,23 +176,17 @@ send(player_port_fd[i][0], (char*)&num_of_hops, sizeof(int), 0);
 send(player_port_fd[i][0], (char*)&i, sizeof(int), 0);
 
 
-// memset(player_hostname[i], '\0', 64);
-// player_detail = gethostbyaddr((char*)&socket_addr.sin_addr, sizeof(struct in_addr), AF_INET);
-// if(player_detail == NULL){
-// 	printf("Problem.\n");
-// 	return EXIT_FAILURE;
-// }
-// strcpy(player_hostname[i], player_detail->h_name);
 
 char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 if(getnameinfo((struct sockaddr *)&socket_addr, socket_addr_len, hbuf, sizeof(hbuf), sbuf,
                        sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0){
- printf("success\n");
- printf("host=%s, serv=%s\n", hbuf, sbuf);
+ //printf("success\n");
+ //printf("host=%s, serv=%s\n", hbuf, sbuf);
+ strcpy(player_hostname[i], hbuf);
+ printf("%s\n", player_hostname[i]);
 }
 
-strcpy(player_hostname[i], hbuf);
-printf("%s\n", player_hostname[i]);
+
 
 i++; //increment 
 
@@ -203,9 +197,9 @@ i++; //increment
 int j = 0;
 while(j < num_of_players){
 
-  if(j == 0){
-    send(player_port_fd[j][0], (char *)&player_port_fd[num_of_players-1][1],sizeof(int), 0);
-    send(player_port_fd[j][0], (char*)&player_hostname[num_of_players-1], 64, 0);
+  if(j == num_of_players - 1){
+    send(player_port_fd[j][0], (char *)&player_port_fd[0][1],sizeof(int), 0);
+    send(player_port_fd[j][0], (char*)&player_hostname[0], 64, 0);
   }
   else{
     send(player_port_fd[j][0], (char *)&player_port_fd[j+1][1],sizeof(int), 0);

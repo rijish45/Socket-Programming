@@ -202,10 +202,10 @@ int main(int argc, char * argv[]){
 
   recv(socket_fd, (char*)&neighbour_hostname, 64, MSG_WAITALL);
   //Done receiving neighbour port and hostname;
-  printf("%s", neighbour_hostname);
+  printf("%s\n", neighbour_hostname);
 
   neighbour_detail = gethostbyname(neighbour_hostname);
-  if(!neighbour_detail){
+  if(neighbour_detail == NULL){
     printf("Error getting neighbour info.\n");
     return EXIT_FAILURE;
   }
@@ -226,7 +226,7 @@ int main(int argc, char * argv[]){
 
   right_neighbour_sfd = socket(AF_INET, SOCK_STREAM, 0);
   if(right_neighbour_sfd == -1){
-    printf("Cannot create a socket to right neighbour\n");
+    printf("Cannot create a socket to right neighbour.\n");
     return EXIT_FAILURE;
   }
 
