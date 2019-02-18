@@ -183,7 +183,7 @@ if(getnameinfo((struct sockaddr *)&socket_addr, socket_addr_len, hbuf, sizeof(hb
  //printf("success\n");
  //printf("host=%s, serv=%s\n", hbuf, sbuf);
  strcpy(player_hostname[i], hbuf);
- printf("%s\n", player_hostname[i]);
+ //printf("%s\n", player_hostname[i]);
 }
 
 
@@ -202,7 +202,8 @@ while(j < num_of_players){
     send(player_port_fd[j][0], (char*)&player_hostname[0], 64, 0);
   }
   else{
-    send(player_port_fd[j][0], (char *)&player_port_fd[j+1][1],sizeof(int), 0);
+    send(player_port_fd[j][0]
+    	, (char *)&player_port_fd[j+1][1],sizeof(int), 0);
     send(player_port_fd[j][0], (char*)&player_hostname[j+1], 64, 0);
   }
   j++;
@@ -256,7 +257,10 @@ else{
     pass_potato = 5500;
     send(player_port_fd[random_player][0], (char *)&pass_potato, sizeof(int), 0);
     int ack = 0;
-    recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
+    int recv_status = recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
+    if(recv_status == -1){
+    	printf("Error occured, didn't recv acknowledgement.\n");
+    }
    
     //Set the number of hops
 	hot_potato.hop_num = num_of_hops;

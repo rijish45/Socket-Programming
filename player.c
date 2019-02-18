@@ -198,11 +198,11 @@ int main(int argc, char * argv[]){
   //Done receiving and sending basic information
   printf("Connected as player %d\n", id);
   recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0);
-  printf("%d\n", neighbour_port);
+  //printf("%d\n", neighbour_port);
 
   recv(socket_fd, (char*)&neighbour_hostname, 64, MSG_WAITALL);
   //Done receiving neighbour port and hostname;
-  printf("%s\n", neighbour_hostname);
+  //printf("%s\n", neighbour_hostname);
 
   neighbour_detail = gethostbyname(neighbour_hostname);
   if(neighbour_detail == NULL){
@@ -300,6 +300,9 @@ int main(int argc, char * argv[]){
    		}
 
    		hot_potato = buffer[0];
+   		printf("%d\n", hot_potato.hop_num);
+   		printf("%d\n", hot_potato.current_hop);
+   		printf("testing\n");
    		hot_potato.hop_trace[hot_potato.current_hop] = id;
    		hot_potato.current_hop++;
    		hot_potato.hop_num--;
@@ -353,6 +356,8 @@ int main(int argc, char * argv[]){
         	receive_signal = 5500;
         	send(destination_fd, (char*)&receive_signal, sizeof(signal), 0);
         	recv(destination_fd, &ack, sizeof(ack), 0);
+        	send(destination_fd, buffer, sizeof(buffer), 0);
+        	recv(destination_fd, &ack, sizeof(int), 0);
 
         	continue;
 
