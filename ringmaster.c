@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <sys/socket.h>
+#include <assert.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <ctype.h>

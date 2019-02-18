@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include "potato.h"
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -102,79 +103,60 @@ int main(int argc, char * argv[]){
       struct hostent * neighbour_detail;
       struct hostent * player_detail;
 
+  
+      
       struct addrinfo host_info;
       struct addrinfo * host_info_list;
-      
-      
+	  memset(&host_info, 0, sizeof(host_info));
+	  host_info.ai_socktype = SOCK_STREAM;
+	  host_info.ai_family   = AF_UNSPEC;
      
-      
-
-		//Get ring-master information
-
-		  ring_master = gethostbyname(argv[1]); //stores the host information for ringmaster
+      //Get ring-master information
+      ring_master = gethostbyname(argv[1]); //stores the host information for ringmaster
 		  if(!ring_master){
 		  	printf("Ring Master: host not found\n");
 		  	return EXIT_FAILURE;
 		  }
-		  else{
+		 else
 		  	ring_master_port = atoi(argv[2]);
-		  }
-
-		  
-
-		  memset(&host_info, 0, sizeof(host_info));
-		  host_info.ai_socktype = SOCK_STREAM;
-		  host_info.ai_family   = AF_UNSPEC;
           
-          
-           status = getaddrinfo(argv[1], argv[2], &host_info, &host_info_list);
-           if (status != 0) {
-   				 perror("getaddrinfo()");
-                 return EXIT_FAILURE;
-  			}
+        status = getaddrinfo(argv[1], argv[2], &host_info, &host_info_list);
+        assert(status != -1);
            
           //Open the socket to the ringmaster
           socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
-          if(socket_fd == -1){
-          	printf("Error: cannot create socket to ringmaster.\n");
-    		return EXIT_FAILURE;
-          }
-
+          assert(socket_fd != -1);
           //start connection
           status = connect(socket_fd, host_info_list->ai_addr,host_info_list->ai_addrlen);
-          if(status < 0){
-          	printf("Cannot connect to ringmaster.\n");
-          	return EXIT_FAILURE;
-          }
+          assert(status != -1);
 
 
        //Create a socket for the player 
       
-       gethostname(playername, sizeof(playername));
+       status = gethostname(playername, sizeof(playername));
+       assert(status != -1);
        player_detail = gethostbyname(playername);
+       assert(player_detail != NULL);
+	   player_socketfd = socket(AF_INET, SOCK_STREAM, 0);
+       assert(player_socketfd != -1);
 
-       player_socketfd = socket(AF_INET, SOCK_STREAM, 0);
-       if(player_socketfd < 0){
-       	printf("Error: Cannot create socket.\n");
-       	return EXIT_FAILURE;
-       }
-
-  
-       player_socket_detail.sin_family = AF_INET;
+   
+       
+       player_socket_detail.sin_family = AF_INET;    
        for(int i = PORTBEGIN; i <= PORTEND; i++ ){
 
-       	   if(i == neighbour_port || i == ring_master_port){
-       	   	continue;
-       	   }
-       		player_socket_detail.sin_port = htons(i);
+       	    player_socket_detail.sin_port = htons(i);
        		memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
        		status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
-       		if(!status)
-       			break;
-          else if(status < 0 && i == PORTEND){
-            printf("No remaining port.\n");
-            return EXIT_FAILURE;
+     
+       	    
+       	    if(status < 0 && i == PORTEND){
+             printf("No remaining port.\n");
+             return EXIT_FAILURE;
           }
+       	 	else if(!status)
+       			break;
+           
        	}
 
   
@@ -188,24 +170,39 @@ int main(int argc, char * argv[]){
 
 
   send(socket_fd, (char*)&player_portnum, sizeof(int), 0);
-  recv(socket_fd, (char *)&num_of_players, sizeof(int), 0);
+  status = recv(socket_fd, (char *)&num_of_players, sizeof(int), 0);
+  if(status == -1){
+  	printf("Error in receiving number of players.\n");
+  	return EXIT_FAILURE;
+  }
   //printf("%d\n", num_of_players);
-  recv(socket_fd, (char*)&num_of_hops, sizeof(int), 0);
+  status = recv(socket_fd, (char*)&num_of_hops, sizeof(int), 0);
+  if(status == -1){
+  	printf("Error in receiving number of hops.\n");
+  	return EXIT_FAILURE;
+  }
   //printf("%d\n", num_of_hops);
   recv(socket_fd, (char*)&id, sizeof(int), 0);
   srand((unsigned int)time(NULL) + id);
 
   //Done receiving and sending basic information
   printf("Connected as player %d\n", id);
-  recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0);
+  status = recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0);
+  if(status == -1){
+  	printf("Error in receiving neighbour port.\n");
+  	return EXIT_FAILURE;
+  }
   //printf("%d\n", neighbour_port);
+  status = recv(socket_fd, (char*)&neighbour_hostname, 64, MSG_WAITALL);
+  if(status == -1){
+  	printf("Error in receiving neighbour hostname.\n");
+  }
 
-  recv(socket_fd, (char*)&neighbour_hostname, 64, MSG_WAITALL);
   //Done receiving neighbour port and hostname;
   //printf("%s\n", neighbour_hostname);
 
   neighbour_detail = gethostbyname(neighbour_hostname);
-  if(neighbour_detail == NULL){
+  if(!neighbour_detail){
     printf("Error getting neighbour info.\n");
     return EXIT_FAILURE;
   }
@@ -220,6 +217,10 @@ int main(int argc, char * argv[]){
 
   int connection_signal;
   int signal_status = recv(socket_fd, &connection_signal, sizeof(int), 0);
+  if(signal_status == -1){
+  	printf("Failure in receiving signal status.\n");
+  	return EXIT_FAILURE;
+  }
 
   int ack = 0;
   send(socket_fd, &ack, sizeof(int), 0);
@@ -230,8 +231,8 @@ int main(int argc, char * argv[]){
     return EXIT_FAILURE;
   }
 
-  neighbour_socket_detail.sin_family = AF_INET;
   neighbour_socket_detail.sin_port = htons(neighbour_port);
+  neighbour_socket_detail.sin_family = AF_INET;
   memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 
   status = connect(right_neighbour_sfd, (struct sockaddr*)&neighbour_socket_detail, sizeof(neighbour_socket_detail));
@@ -269,10 +270,10 @@ int main(int argc, char * argv[]){
  	status = select(max_sfd + 1, & temporary_fds, NULL, NULL, NULL);
  	if(status == -1){
  		perror("select()");
+ 		return EXIT_FAILURE;
  	}
 
-   int reading_fd;
-
+   int reading_fd = 0;
    if(FD_ISSET(socket_fd, &temporary_fds))
 		reading_fd = socket_fd;
    else if(FD_ISSET(right_neighbour_sfd, &temporary_fds))
@@ -282,10 +283,15 @@ int main(int argc, char * argv[]){
 
   
  	
- 	recv(reading_fd, &receive_signal, sizeof(int), 0);
-    if(receive_signal == 4500){
- 		break;
+ 	status = recv(reading_fd, &receive_signal, sizeof(int), 0);
+ 	if(status == -1){
+ 		printf("Error in receiving the signal determining what to do. \n");
+   		return EXIT_FAILURE;
  	}
+    
+    if(receive_signal == 4500) //Game is over
+ 		break;
+ 	
  	else{
    
    		send(reading_fd, &ack, sizeof(int), 0);
@@ -294,9 +300,8 @@ int main(int argc, char * argv[]){
    			printf("Error in receiving the potato\n");
    			return EXIT_FAILURE;
    		}
-   		else{
+   		else
    			send(reading_fd, &ack, sizeof(int), 0);
-   		}
 
    		hot_potato = buffer[0];
    		//printf("%d\n", hot_potato.hop_num);
@@ -306,8 +311,9 @@ int main(int argc, char * argv[]){
    		hot_potato.hop_num--;
 		buffer[0] = hot_potato;
 
-		if(hot_potato.hop_num == 0){
-			printf("I'm it\n");
+		if(!hot_potato.hop_num){
+			
+			printf("I'm it.\n");
 			status = send(socket_fd, buffer, sizeof(buffer), 0);
 			if(status == -1){
 				printf("Problem in sending the potato back to ringmaster.\n");
@@ -320,39 +326,45 @@ int main(int argc, char * argv[]){
  	else{
 
  			int random = rand() % 2;
- 			if(random == 0)
- 				destination_fd = left_neighbour_sfd;
- 			else if (random == 1)
+ 			
+ 			if (random == 1)
  				destination_fd = right_neighbour_sfd;
+ 			else if(!random)
+ 				destination_fd = left_neighbour_sfd;
  	
+ 	
+ 		 if(id == num_of_players - 1) {
+ 		 		if (random == 1)  
+            		neighbour_id = 0;
+          		if (!random)
+            	  neighbour_id = id - 1;
+          		}
 
 
- 			if(id == 0){
+
+ 		else if(id == 0){
  				if(random == 1)
  					neighbour_id = id + 1;
- 				else if (random == 0) 
+ 				else if (!random) 
           	  		neighbour_id = num_of_players - 1;
           	}	
 
 
-          else if(id == num_of_players - 1) {
-          	if (random == 0)
-            	neighbour_id = id - 1;
-          	else if (random == 1)  
-            	neighbour_id = 0;
-         }
+        else {
 
-          else {
-          	if (random == 1) 
-            neighbour_id = id + 1;
-          	else if(random == 0) 
+        	 if(!random) 
     	        neighbour_id = id - 1;
+          	else if (random == 1) 
+            	neighbour_id = id + 1;
+          	
     		}
           
-        	printf("Sending potato to %d \n", neighbour_id);
+        	printf("Sending the potato to %d \n", neighbour_id);
         	receive_signal = 5500;
+
         	send(destination_fd, (char*)&receive_signal, sizeof(signal), 0);
         	recv(destination_fd, &ack, sizeof(ack), 0);
+
         	send(destination_fd, buffer, sizeof(buffer), 0);
         	recv(destination_fd, &ack, sizeof(int), 0);
 
@@ -369,9 +381,8 @@ int main(int argc, char * argv[]){
 
 }
 
-
-  close(right_neighbour_sfd);
   close(player_socketfd);
+  close(right_neighbour_sfd);
   close(socket_fd);
   return EXIT_SUCCESS;
 
