@@ -301,7 +301,6 @@ int main(int argc, char * argv[]){
    		hot_potato = buffer[0];
    		printf("%d\n", hot_potato.hop_num);
    		printf("%d\n", hot_potato.current_hop);
-   		printf("testing\n");
    		hot_potato.hop_trace[hot_potato.current_hop] = id;
    		hot_potato.current_hop++;
    		hot_potato.hop_num--;
