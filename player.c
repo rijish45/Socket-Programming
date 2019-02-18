@@ -11,8 +11,8 @@
 #include <netdb.h>
 #include <time.h>
 
-#define PORTBEGIN 51097
-#define PORTEND 51015
+#define PORTBEGIN 51015
+#define PORTEND 51097
 
 //Input Error Checking
 int check_error_input(char * argv[]){
@@ -23,7 +23,7 @@ int check_error_input(char * argv[]){
 	while( j < strlen(argv[2])){
   		flag = isdigit(argv[2][j]);
   		if (flag == 0){
-  			printf("Port should be a number\n");
+  			printf("Port should be a number.\n");
   			return EXIT_FAILURE;
   		}
   		j++;
@@ -52,26 +52,38 @@ int main(int argc, char * argv[]){
 
 
 	int error = check_error_input(argv);
+
+   //port numbers 
 	int ring_master_port;
+	int player_portnum;
+    int neighbour_port;
+  	
+  	//necessary variables 
   	int id;
   	int ack = 0;
   	int receive_signal = 0;
   	int status;
-	int player_portnum;
+	
+	//receive information
 	int num_of_hops;
 	int neighbour_id;
-	int destination_fd;
   	int num_of_players;
-  	int socket_fd;
+
+    //socket file descriptors
+  	int socket_fd; //ring master socket-descriptor
   	int player_socketfd;
-  	int neighbour_port;
-  	char neighbour_hostname[64];
-  	memset(neighbour_hostname, '\0', 64);
+  	int destination_fd;
   	int right_neighbour_sfd;
   	int left_neighbour_sfd;
-  	char playername[64];
+  
+  	
+    char playername[64]; //Store playername
+  	char neighbour_hostname[64]; //Store neighbour hostname
+  	memset(neighbour_hostname, '\0', 64);
+  	
   	POTATO hot_potato;
 
+  	
 
  
 
@@ -79,20 +91,27 @@ int main(int argc, char * argv[]){
 	if(!error){
 
          
-      struct hostent * ring_master;
-      struct hostent * neighbour_detail;
-      struct addrinfo host_info;
-      struct addrinfo * host_info_list;
+      struct sockaddr_in buff;
+      struct sockaddr_in neighbour_socket_in; 
       struct sockaddr_in player_socket_detail;
       struct sockaddr_in neighbour_socket_detail;
-      struct hostent * player_detail;
-      struct sockaddr_in buff;
-      struct sockaddr_in neighbour_socket_in;
       socklen_t len = sizeof(buff);
 
-		  //Get ring-master information
+      
+      struct hostent * ring_master;
+      struct hostent * neighbour_detail;
+      struct hostent * player_detail;
 
-		  ring_master = gethostbyname(argv[1]);
+      struct addrinfo host_info;
+      struct addrinfo * host_info_list;
+      
+      
+     
+      
+
+		//Get ring-master information
+
+		  ring_master = gethostbyname(argv[1]); //stores the host information for ringmaster
 		  if(!ring_master){
 		  	printf("Ring Master: host not found\n");
 		  	return EXIT_FAILURE;
@@ -104,8 +123,9 @@ int main(int argc, char * argv[]){
 		  
 
 		  memset(&host_info, 0, sizeof(host_info));
+		  host_info.ai_socktype = SOCK_STREAM;
 		  host_info.ai_family   = AF_UNSPEC;
-          host_info.ai_socktype = SOCK_STREAM;
+          
           
            status = getaddrinfo(argv[1], argv[2], &host_info, &host_info_list);
            if (status != 0) {
@@ -116,14 +136,14 @@ int main(int argc, char * argv[]){
           //Open the socket to the ringmaster
           socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
           if(socket_fd == -1){
-          	printf("Error: cannot create socket.\n");
+          	printf("Error: cannot create socket to ringmaster.\n");
     		return EXIT_FAILURE;
           }
 
           //start connection
           status = connect(socket_fd, host_info_list->ai_addr,host_info_list->ai_addrlen);
           if(status < 0){
-          	printf("Cannot connect\n");
+          	printf("Cannot connect to ringmaster.\n");
           	return EXIT_FAILURE;
           }
 
@@ -142,6 +162,10 @@ int main(int argc, char * argv[]){
   
        player_socket_detail.sin_family = AF_INET;
        for(int i = PORTBEGIN; i <= PORTEND; i++ ){
+
+       	   if(i == neighbour_port || i == ring_master_port){
+       	   	continue;
+       	   }
        		player_socket_detail.sin_port = htons(i);
        		memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
        		status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
@@ -154,31 +178,35 @@ int main(int argc, char * argv[]){
        	}
 
   
-  if (!getsockname(player_socketfd, (struct sockaddr*)&buff, &len)) {
+  if (!(getsockname(player_socketfd, (struct sockaddr*)&buff, &len))) {
     	player_portnum = ntohs(buff.sin_port);
   }
   else{
-    printf("Error: getsockname\n");
+    printf("Error: getsockname failure.\n");
     return EXIT_FAILURE;
   }
 
 
   send(socket_fd, (char*)&player_portnum, sizeof(int), 0);
   recv(socket_fd, (char *)&num_of_players, sizeof(int), 0);
+  printf("%d\n", num_of_players);
   recv(socket_fd, (char*)&num_of_hops, sizeof(int), 0);
+  printf("%d\n", num_of_hops);
   recv(socket_fd, (char*)&id, sizeof(int), 0);
   srand((unsigned int)time(NULL) + id);
 
   //Done receiving and sending basic information
   printf("Connected as player %d\n", id);
   recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0);
-  recv(socket_fd, (char*)&neighbour_hostname, 64, 0);
-  //Done receiving neighbour port and hostname;
+  printf("%d\n", neighbour_port);
 
+  recv(socket_fd, (char*)&neighbour_hostname, 64, MSG_WAITALL);
+  //Done receiving neighbour port and hostname;
+  printf("%s", neighbour_hostname);
 
   neighbour_detail = gethostbyname(neighbour_hostname);
   if(!neighbour_detail){
-    printf("Error getting neighbour info\n");
+    printf("Error getting neighbour info.\n");
     return EXIT_FAILURE;
   }
 
@@ -202,8 +230,8 @@ int main(int argc, char * argv[]){
     return EXIT_FAILURE;
   }
 
-  neighbour_socket_detail.sin_port = htons(neighbour_port);
   neighbour_socket_detail.sin_family = AF_INET;
+  neighbour_socket_detail.sin_port = htons(neighbour_port);
   memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 
   status = connect(right_neighbour_sfd, (struct sockaddr*)&neighbour_socket_detail, sizeof(neighbour_socket_detail));

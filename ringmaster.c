@@ -61,6 +61,18 @@ int pass_potato; // signal for passing the potato
 int game_end; //signal for ending the game
 int random_player; //random player selection using rand()
 
+struct sockaddr_storage socket_addr;
+struct hostent * player_detail;
+struct hostent* host_info;
+socklen_t socket_addr_len;
+
+
+//Get host info
+int socket_fd;
+struct addrinfo hostsocket_info;
+struct addrinfo* hostsocket_info_list;
+
+
 if(argc > 4 || argc < 4){
 		printf("Correct format is : ringmaster <port_num> <num_players> <num_hops>\n");
     	return EXIT_FAILURE;
@@ -78,9 +90,8 @@ int num_of_hops = atoi(argv[3]);
 srand((unsigned int)time(NULL)); //seed
 int player_port_fd[num_of_players][2]; //For storing player file-descriptor and port-number
 char player_hostname[num_of_players][64]; //For storing player host-name
-struct sockaddr_in socket_addr;
-socklen_t socket_addr_len;
-struct hostent * player_detail;
+
+
 
 
 //Initialization
@@ -89,11 +100,7 @@ printf("Players = %d\n", num_of_players);
 printf("Hops = %d\n", num_of_hops);
 
 
-//Get host info
-int socket_fd;
-struct addrinfo hostsocket_info;
-struct addrinfo* hostsocket_info_list;
-struct hostent* host_info;
+
 
 char hostname[64];
 gethostname(hostname, sizeof(hostname)); //returns hostname for current process
@@ -157,13 +164,8 @@ else{
 printf("Player %d is ready to play\n", i);
 }
 
-memset(player_hostname[i], '\0', 64);
-player_detail = gethostbyaddr((char*)&socket_addr.sin_addr, sizeof(struct in_addr), AF_INET);
-strcpy(player_hostname[i], player_detail->h_name);
-
-//printf("%s\n", player_hostname[i]);
-
 recv(incoming_connection_fd, &port_number_player, sizeof(int), 0);
+printf("%d\n", port_number_player);
 player_port_fd[i][0] = incoming_connection_fd;
 player_port_fd[i][1] = port_number_player;
 
@@ -174,7 +176,26 @@ send(player_port_fd[i][0], (char*)&num_of_hops, sizeof(int), 0);
 send(player_port_fd[i][0], (char*)&i, sizeof(int), 0);
 
 
+// memset(player_hostname[i], '\0', 64);
+// player_detail = gethostbyaddr((char*)&socket_addr.sin_addr, sizeof(struct in_addr), AF_INET);
+// if(player_detail == NULL){
+// 	printf("Problem.\n");
+// 	return EXIT_FAILURE;
+// }
+// strcpy(player_hostname[i], player_detail->h_name);
+
+char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+if(getnameinfo((struct sockaddr *)&socket_addr, socket_addr_len, hbuf, sizeof(hbuf), sbuf,
+                       sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0){
+ printf("success\n");
+ printf("host=%s, serv=%s\n", hbuf, sbuf);
+}
+
+strcpy(player_hostname[i], hbuf);
+printf("%s\n", player_hostname[i]);
+
 i++; //increment 
+
 }
 
 
