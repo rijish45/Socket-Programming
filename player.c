@@ -189,9 +189,9 @@ int main(int argc, char * argv[]){
 
   send(socket_fd, (char*)&player_portnum, sizeof(int), 0);
   recv(socket_fd, (char *)&num_of_players, sizeof(int), 0);
-  printf("%d\n", num_of_players);
+  //printf("%d\n", num_of_players);
   recv(socket_fd, (char*)&num_of_hops, sizeof(int), 0);
-  printf("%d\n", num_of_hops);
+  //printf("%d\n", num_of_hops);
   recv(socket_fd, (char*)&id, sizeof(int), 0);
   srand((unsigned int)time(NULL) + id);
 
@@ -299,8 +299,8 @@ int main(int argc, char * argv[]){
    		}
 
    		hot_potato = buffer[0];
-   		printf("%d\n", hot_potato.hop_num);
-   		printf("%d\n", hot_potato.current_hop);
+   		//printf("%d\n", hot_potato.hop_num);
+   		//printf("%d\n", hot_potato.current_hop);
    		hot_potato.hop_trace[hot_potato.current_hop] = id;
    		hot_potato.current_hop++;
    		hot_potato.hop_num--;
