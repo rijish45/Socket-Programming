@@ -272,10 +272,19 @@ else{
     send(player_port_fd[random_player][0], buffer, sizeof(buffer), 0);
     recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
     
- 
-    int max_file_descriptor = player_port_fd[num_of_players - 1][0]; 
+  
+
     fd_set read_file_descriptors;
     FD_ZERO(&read_file_descriptors);
+
+    int max_file_descriptor = player_port_fd[0][0];
+    for (i = 0; i < num_of_players; i++) {
+       FD_SET(player_port_fd[i][0], &read_file_descriptors);
+       if (player_port_fd[i][0] > max_file_descriptor) {
+      		max_file_descriptor = player_port_fd[i][0];
+    }
+  }
+
 
   //monitor the file-descriptors
   int select_status = select(max_file_descriptor + 1, &read_file_descriptors, NULL, NULL, NULL);

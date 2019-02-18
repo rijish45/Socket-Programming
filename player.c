@@ -90,7 +90,7 @@ int main(int argc, char * argv[]){
 
 	if(!error){
 
-         
+      //Required struct
       struct sockaddr_in buff;
       struct sockaddr_in neighbour_socket_in; 
       struct sockaddr_in player_socket_detail;
@@ -283,8 +283,7 @@ int main(int argc, char * argv[]){
   
  	
  	recv(reading_fd, &receive_signal, sizeof(int), 0);
-
- 	if(receive_signal == 4500){
+    if(receive_signal == 4500){
  		break;
  	}
  	else{
@@ -315,7 +314,6 @@ int main(int argc, char * argv[]){
 				printf("Problem in sending the potato back to ringmaster.\n");
 				return EXIT_FAILURE;
 			}
-			continue;
 		}
 
 
@@ -341,14 +339,14 @@ int main(int argc, char * argv[]){
           else if(id == num_of_players - 1) {
           	if (random == 0)
             	neighbour_id = id - 1;
-          	else if (random == 1)  // right neighbor
+          	else if (random == 1)  
             	neighbour_id = 0;
          }
 
           else {
-          	if (random == 1) // right neighbor
+          	if (random == 1) 
             neighbour_id = id + 1;
-          	else if(random == 0) // left neighbor
+          	else if(random == 0) 
     	        neighbour_id = id - 1;
     		}
           
