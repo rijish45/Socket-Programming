@@ -59,7 +59,7 @@ int main(int argc, char * argv[]){
 	int player_portnum;
   int neighbour_port;
   	
-  	//necessary variables 
+  //necessary variables 
   int id;
   int ack = 0;
   int receive_signal = 0;
@@ -96,16 +96,15 @@ int main(int argc, char * argv[]){
       struct sockaddr_in player_socket_detail;
       struct sockaddr_in neighbour_socket_detail;
       socklen_t len = sizeof(buff);
-
-      
+      struct addrinfo host_info;
+      struct addrinfo * host_info_list;  
       struct hostent * ring_master;
       struct hostent * neighbour_detail;
       struct hostent * player_detail;
 
   
       
-    struct addrinfo host_info;
-    struct addrinfo * host_info_list;
+    
 	  memset(&host_info, 0, sizeof(host_info));
 	  host_info.ai_socktype = SOCK_STREAM;
 	  host_info.ai_family   = AF_UNSPEC;
@@ -138,17 +137,22 @@ int main(int argc, char * argv[]){
 	     player_socketfd = socket(AF_INET, SOCK_STREAM, 0);
        assert(player_socketfd != -1);
 
+
    
        
-       player_socket_detail.sin_family = AF_INET;    
+         
        for(int i = PORTBEGIN; i <= PORTEND; i++ ){
 
+          player_socket_detail.sin_family = AF_INET;
        	  player_socket_detail.sin_port = htons(i);
        		memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
        		status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
+          // if(status == -1){
+          //   perror("bind()");
+          //   return EXIT_FAILURE;
+          // }
      
-       	    
-       	    if(status < 0 && i == PORTEND){
+       	  if(status < 0 && i == PORTEND){
              printf("No remaining port.\n");
              return EXIT_FAILURE;
           }
@@ -184,7 +188,7 @@ int main(int argc, char * argv[]){
   srand((unsigned int)time(NULL) + id);
 
   //Done receiving and sending basic information
-  printf("Connected as player %d\n", id);
+  printf("Connected as player %d out of %d total players\n", id, num_of_players);
   status = recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0);
   if(status == -1){
   	printf("Error in receiving neighbour port.\n");
@@ -235,7 +239,7 @@ int main(int argc, char * argv[]){
 
   memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 
-  status = connect(right_neighbour_sfd, (struct sockaddr*)&neighbour_socket_detail, sizeof(neighbour_socket_detail));
+  status = connect(right_neighbour_sfd, (struct sockaddr*)&neighbour_socket_detail, sizeof(struct sockaddr_in));
   if(status == -1){
   	printf("Couldn't connect with right neighbour\n");
     return EXIT_FAILURE;
@@ -285,7 +289,7 @@ int main(int argc, char * argv[]){
  	
  	status = recv(reading_fd, &receive_signal, sizeof(int), 0);
  	if(status == -1){
- 		printf("Error in receiving the signal determining what to do. \n");
+ 		   printf("Error in receiving the signal determining what to do. \n");
    		return EXIT_FAILURE;
  	}
     
@@ -304,12 +308,11 @@ int main(int argc, char * argv[]){
    			send(reading_fd, &ack, sizeof(int), 0);
 
    		hot_potato = buffer[0];
-   		//printf("%d\n", hot_potato.hop_num);
-   		//printf("%d\n", hot_potato.current_hop);
    		hot_potato.hop_trace[hot_potato.current_hop] = id;
-   		hot_potato.current_hop++;
    		hot_potato.hop_num--;
-		buffer[0] = hot_potato;
+      hot_potato.current_hop++;
+		  
+      buffer[0] = hot_potato;
 
 		if(!hot_potato.hop_num){
 			
