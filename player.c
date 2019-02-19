@@ -57,13 +57,13 @@ int main(int argc, char * argv[]){
    //port numbers 
 	int ring_master_port;
 	int player_portnum;
-    int neighbour_port;
+  int neighbour_port;
   	
   	//necessary variables 
-  	int id;
-  	int ack = 0;
-  	int receive_signal = 0;
-  	int status;
+  int id;
+  int ack = 0;
+  int receive_signal = 0;
+  int status;
 	
 	//receive information
 	int num_of_hops;
@@ -78,11 +78,10 @@ int main(int argc, char * argv[]){
   int left_neighbour_sfd;
   
   	
-    char playername[64]; //Store playername
-  	char neighbour_hostname[64]; //Store neighbour hostname
-  	memset(neighbour_hostname, '\0', 64);
-  	
-  	POTATO hot_potato;
+  char playername[64]; //Store playername
+  char neighbour_hostname[64]; //Store neighbour hostname
+  memset(neighbour_hostname, '\0', 64);
+  POTATO hot_potato;
 
   	
 
@@ -119,16 +118,15 @@ int main(int argc, char * argv[]){
 		  }
 		 else
 		  	ring_master_port = atoi(argv[2]);
-          
         status = getaddrinfo(argv[1], argv[2], &host_info, &host_info_list);
         assert(status != -1);
            
-          //Open the socket to the ringmaster
-          socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
-          assert(socket_fd != -1);
-          //start connection
-          status = connect(socket_fd, host_info_list->ai_addr,host_info_list->ai_addrlen);
-          assert(status != -1);
+        //Open the socket to the ringmaster
+        socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
+        assert(socket_fd != -1);
+        //start connection
+        status = connect(socket_fd, host_info_list->ai_addr,host_info_list->ai_addrlen);
+        assert(status != -1);
 
 
        //Create a socket for the player 
@@ -145,7 +143,7 @@ int main(int argc, char * argv[]){
        player_socket_detail.sin_family = AF_INET;    
        for(int i = PORTBEGIN; i <= PORTEND; i++ ){
 
-       	    player_socket_detail.sin_port = htons(i);
+       	  player_socket_detail.sin_port = htons(i);
        		memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
        		status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
      
@@ -233,7 +231,7 @@ int main(int argc, char * argv[]){
 
   neighbour_socket_detail.sin_port = htons(neighbour_port);
   neighbour_socket_detail.sin_family = AF_INET;
-  neighbour_socket_detail.sin_addr = INADDR_ANY; //needed this to fix it
+  neighbour_socket_detail.sin_addr.s_addr = INADDR_ANY; //needed this to fix it
 
   memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 
