@@ -116,7 +116,7 @@ if (!host_info) {
  hostsocket_info.ai_flags    = AI_PASSIVE;
  hostsocket_info.ai_socktype = SOCK_STREAM;
  hostsocket_info.ai_family   = AF_INET;
- int address_status = getaddrinfo(hostname, argv[1], &hostsocket_info, &hostsocket_info_list);
+ int address_status = getaddrinfo(NULL, argv[1], &hostsocket_info, &hostsocket_info_list);
 
  //create a socket
  socket_fd = socket(hostsocket_info_list->ai_family, hostsocket_info_list->ai_socktype, hostsocket_info_list->ai_protocol);

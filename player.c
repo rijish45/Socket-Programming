@@ -68,14 +68,14 @@ int main(int argc, char * argv[]){
 	//receive information
 	int num_of_hops;
 	int neighbour_id;
-  	int num_of_players;
+  int num_of_players;
 
-    //socket file descriptors
-  	int socket_fd; //ring master socket-descriptor
-  	int player_socketfd;
-  	int destination_fd;
-  	int right_neighbour_sfd;
-  	int left_neighbour_sfd;
+  //socket file descriptors
+  int socket_fd; //ring master socket-descriptor
+  int player_socketfd;
+  int destination_fd;
+  int right_neighbour_sfd;
+  int left_neighbour_sfd;
   
   	
     char playername[64]; //Store playername
@@ -105,8 +105,8 @@ int main(int argc, char * argv[]){
 
   
       
-      struct addrinfo host_info;
-      struct addrinfo * host_info_list;
+    struct addrinfo host_info;
+    struct addrinfo * host_info_list;
 	  memset(&host_info, 0, sizeof(host_info));
 	  host_info.ai_socktype = SOCK_STREAM;
 	  host_info.ai_family   = AF_UNSPEC;
@@ -137,7 +137,7 @@ int main(int argc, char * argv[]){
        assert(status != -1);
        player_detail = gethostbyname(playername);
        assert(player_detail != NULL);
-	   player_socketfd = socket(AF_INET, SOCK_STREAM, 0);
+	     player_socketfd = socket(AF_INET, SOCK_STREAM, 0);
        assert(player_socketfd != -1);
 
    
@@ -233,6 +233,8 @@ int main(int argc, char * argv[]){
 
   neighbour_socket_detail.sin_port = htons(neighbour_port);
   neighbour_socket_detail.sin_family = AF_INET;
+  neighbour_socket_detail.sin_addr = INADDR_ANY; //needed this to fix it
+
   memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 
   status = connect(right_neighbour_sfd, (struct sockaddr*)&neighbour_socket_detail, sizeof(neighbour_socket_detail));
@@ -362,7 +364,7 @@ int main(int argc, char * argv[]){
         	printf("Sending the potato to %d \n", neighbour_id);
         	receive_signal = 5500;
 
-        	send(destination_fd, (char*)&receive_signal, sizeof(signal), 0);
+        	send(destination_fd, (char*)&receive_signal, sizeof(int), 0);
         	recv(destination_fd, &ack, sizeof(ack), 0);
 
         	send(destination_fd, buffer, sizeof(buffer), 0);
