@@ -145,8 +145,12 @@ int main(int argc, char * argv[]){
 
           player_socket_detail.sin_family = AF_INET;
        	  player_socket_detail.sin_port = htons(i);
-       		memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
+          player_socket_detail.sin_addr.s_addr = INADDR_ANY;
+
+       		//memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
        		status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
+          if(status == 0)
+            break;
           // if(status == -1){
           //   perror("bind()");
           //   return EXIT_FAILURE;
@@ -156,8 +160,6 @@ int main(int argc, char * argv[]){
              printf("No remaining port.\n");
              return EXIT_FAILURE;
           }
-       	 	else if(!status)
-       			break;
            
        	}
 
@@ -235,7 +237,7 @@ int main(int argc, char * argv[]){
 
   neighbour_socket_detail.sin_port = htons(neighbour_port);
   neighbour_socket_detail.sin_family = AF_INET;
-  neighbour_socket_detail.sin_addr.s_addr = INADDR_ANY; //needed this to fix it
+  //neighbour_socket_detail.sin_addr.s_addr = INADDR_ANY; //needed this to fix it
 
   memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 

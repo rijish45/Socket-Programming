@@ -228,8 +228,8 @@ for (int i = 0; i < num_of_players; i++){
 		return EXIT_FAILURE;
 	}
 }
+ 
 
-sleep(5); //Wait for some time
 
 //Now everything is set, we can begin the game
 
@@ -260,7 +260,7 @@ else{
     int ack = 0;
     int recv_status = recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
     if(recv_status == -1){
-    	printf("Error occured, didn't recv acknowledgement.\n");
+    	printf("Error occured, didn't receive acknowledgement.\n");
     }
    
     //Set the number of hops
