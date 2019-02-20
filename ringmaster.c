@@ -63,7 +63,7 @@ int game_end; //signal for ending the game
 int random_player; //random player selection using rand()
 
 struct sockaddr_storage socket_addr;
-struct hostent * player_detail;
+//struct hostent * player_detail;
 struct hostent* host_info;
 socklen_t socket_addr_len;
 
@@ -84,7 +84,7 @@ int error = check_error_input(argv);
 if(!error){
 
 //Get the values from the command line
-int port_num = atoi(argv[1]);
+//int port_num = atoi(argv[1]);
 int num_of_players = atoi(argv[2]);
 int num_of_hops = atoi(argv[3]);
 srand((unsigned int)time(NULL)); //seed
@@ -109,7 +109,7 @@ if (!host_info) {
  hostsocket_info.ai_flags    = AI_PASSIVE;
  hostsocket_info.ai_socktype = SOCK_STREAM;
  hostsocket_info.ai_family   = AF_INET;
- int address_status = getaddrinfo(NULL, argv[1], &hostsocket_info, &hostsocket_info_list);
+ getaddrinfo(NULL, argv[1], &hostsocket_info, &hostsocket_info_list);
 
  //create a socket
  socket_fd = socket(hostsocket_info_list->ai_family, hostsocket_info_list->ai_socktype, hostsocket_info_list->ai_protocol);

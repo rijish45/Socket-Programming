@@ -61,7 +61,6 @@ int main(int argc, char * argv[]){
   	
   //necessary variables 
   int id;
-  int ack = 0;
   int receive_signal = 0;
   int status;
 	
@@ -71,10 +70,11 @@ int main(int argc, char * argv[]){
   int num_of_players;
 
   //socket file descriptors
-  int socket_fd; //ring master socket-descriptor
-  int player_socketfd;
-  int destination_fd;
-  int right_neighbour_sfd;
+  
+  int player_socketfd = 0;
+  int socket_fd = 0;
+  int destination_fd = 0;
+  int right_neighbour_sfd = 0;
   int left_neighbour_sfd;
   
   	
@@ -145,7 +145,7 @@ int main(int argc, char * argv[]){
 
           player_socket_detail.sin_family = AF_INET;
        	  player_socket_detail.sin_port = htons(i);
-	        printf("%d", htons(player_socket_detail.sin_port));
+	        //printf("%d", htons(player_socket_detail.sin_port));
 	        player_socket_detail.sin_addr.s_addr = INADDR_ANY;
 	        //memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
        	  status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
