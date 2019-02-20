@@ -87,21 +87,14 @@ if(!error){
 int port_num = atoi(argv[1]);
 int num_of_players = atoi(argv[2]);
 int num_of_hops = atoi(argv[3]);
-
 srand((unsigned int)time(NULL)); //seed
 int player_port_fd[num_of_players][2]; //For storing player file-descriptor and port-number
 char player_hostname[num_of_players][64]; //For storing player host-name
-
-
-
 
 //Initialization
 printf("Potato Ringmaster\n");
 printf("Players = %d\n", num_of_players);
 printf("Hops = %d\n", num_of_hops);
-
-
-
 
 char hostname[64];
 gethostname(hostname, sizeof(hostname)); //returns hostname for current process
@@ -120,15 +113,14 @@ if (!host_info) {
 
  //create a socket
  socket_fd = socket(hostsocket_info_list->ai_family, hostsocket_info_list->ai_socktype, hostsocket_info_list->ai_protocol);
- 
  if (socket_fd == -1) {
     printf("Error: cannot create socket.\n");
     return EXIT_FAILURE;
   }
 
 //Set socket details
-int yes = 1;
-int sock_status = setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+int optval = 1;
+int sock_status = setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int));
 if(sock_status < 0){
 	perror("setsockopt");
     close(socket_fd);
@@ -138,27 +130,26 @@ if(sock_status < 0){
  //Bind system call
  int bind_status = bind(socket_fd, hostsocket_info_list->ai_addr, hostsocket_info_list->ai_addrlen);
   if (bind_status == -1) {
-    printf("Error: cannot bind socket\n");
+    printf("Error: cannot bind socket.\n");
     return EXIT_FAILURE;
   } 
 
  //Listen on the socket
  int listen_status = listen(socket_fd, num_of_players);
   if (listen_status == -1) {
-    printf("Error: cannot listen on socket\n");
+    printf("Error: cannot listen on socket.\n");
     return EXIT_FAILURE;
   }
 
 int i = 0;
+int port_number_player;
+int incoming_connection_fd;
 while ( i < num_of_players){
 
 socket_addr_len = sizeof(socket_addr);
-int port_number_player;
-int incoming_connection_fd;
-
 incoming_connection_fd = accept(socket_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
 if (incoming_connection_fd == -1) {
-    printf("Error: cannot accept connection on socket\n");
+    printf("Error: cannot accept connection on socket.\n");
     return EXIT_FAILURE;
   }
 else{
@@ -181,14 +172,11 @@ send(player_port_fd[i][0], (char*)&i, sizeof(int), 0);
 char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 if(getnameinfo((struct sockaddr *)&socket_addr, socket_addr_len, hbuf, sizeof(hbuf), sbuf,
                        sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0){
+  strcpy(player_hostname[i], hbuf);
  //printf("success\n");
  //printf("host=%s, serv=%s\n", hbuf, sbuf);
- strcpy(player_hostname[i], hbuf);
  //printf("%s\n", player_hostname[i]);
 }
-
-
-
 i++; //increment 
 
 }
@@ -203,8 +191,7 @@ while(j < num_of_players){
     send(player_port_fd[j][0], (char*)&player_hostname[0], 64, 0);
   }
   else{
-    send(player_port_fd[j][0]
-    	, (char *)&player_port_fd[j+1][1],sizeof(int), 0);
+    send(player_port_fd[j][0], (char *)&player_port_fd[j+1][1],sizeof(int), 0);
     send(player_port_fd[j][0], (char*)&player_hostname[j+1], 64, 0);
   }
   j++;
@@ -212,27 +199,23 @@ while(j < num_of_players){
 
 
 //Send signal to initiate connections between the neighbouring players
-
 connection_initiate = 1;
 for(int i = 0; i < num_of_players; i++){
   send(player_port_fd[i][0], (char *)&(connection_initiate),sizeof(int), 0);
 }
 
 //Make sure that all players are ready
-
 for (int i = 0; i < num_of_players; i++){
 	int ready = 0;
 	int player_ready_status = recv(player_port_fd[i][0],&ready, sizeof(int), 0 );
 	if(player_ready_status == -1){
-		printf("Player %d is not ready. Restart the game again.\n", i);
+		printf("Error: Player %d is not ready. Restart the game again.\n", i);
 		return EXIT_FAILURE;
 	}
 }
  
 
-
 //Now everything is set, we can begin the game
-
 if(num_of_hops == 0){
   
    game_end = 4500;
@@ -252,19 +235,17 @@ else{
 
     random_player = ((rand()) % num_of_players);
     printf("Ready to start the game, sending potato to player %d\n", random_player );
-    
-
     //Send potato to the random player
     pass_potato = 5500;
     send(player_port_fd[random_player][0], (char *)&pass_potato, sizeof(int), 0);
     int ack = 0;
     int recv_status = recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
     if(recv_status == -1){
-    	printf("Error occured, didn't receive acknowledgement.\n");
+    	printf("Error: Didn't receive acknowledgement from player after potato was sent.\n");
     }
    
     //Set the number of hops
-	hot_potato.hop_num = num_of_hops;
+	  hot_potato.hop_num = num_of_hops;
     hot_potato.current_hop = 0;
     struct potato buffer[1];
     memset(&buffer[0], 0, sizeof(buffer[0]));
@@ -272,8 +253,6 @@ else{
     buffer[0] = hot_potato;
     send(player_port_fd[random_player][0], buffer, sizeof(buffer), 0);
     recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
-    
-  
     int max_file_descriptor = player_port_fd[0][0];
     fd_set read_file_descriptors;
     FD_ZERO(&read_file_descriptors);
@@ -290,7 +269,7 @@ else{
   //monitor the file-descriptors
   int select_status = select(max_file_descriptor + 1, &read_file_descriptors, NULL, NULL, NULL);
   if(select_status < 0 && errno!= EINTR){
-    printf("Select error"); 
+    printf("Error: Select error"); 
     return EXIT_FAILURE;
   }
 
@@ -301,7 +280,7 @@ else{
         
       ssize_t receive = recv(player_port_fd[index][0], buffer, sizeof(buffer) , MSG_WAITALL);
      	if (receive < 0){
-	  		printf(("Error receiving potato at the end of the game."));
+	  		printf(("Error: Couldn't receive potato at the end of the game."));
 	  		return EXIT_FAILURE;
 	  	}
      }

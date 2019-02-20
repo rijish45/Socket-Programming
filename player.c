@@ -145,16 +145,12 @@ int main(int argc, char * argv[]){
 
           player_socket_detail.sin_family = AF_INET;
        	  player_socket_detail.sin_port = htons(i);
-          player_socket_detail.sin_addr.s_addr = INADDR_ANY;
-
-       		//memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
-       		status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
+	        printf("%d", htons(player_socket_detail.sin_port));
+	        player_socket_detail.sin_addr.s_addr = INADDR_ANY;
+	        //memcpy(&player_socket_detail.sin_addr, player_detail->h_addr_list[0], player_detail->h_length);
+       	  status = bind(player_socketfd, (struct sockaddr *)&player_socket_detail, sizeof(player_socket_detail));
           if(status == 0)
             break;
-          // if(status == -1){
-          //   perror("bind()");
-          //   return EXIT_FAILURE;
-          // }
      
        	  if(status < 0 && i == PORTEND){
              printf("No remaining port.\n");
@@ -163,7 +159,12 @@ int main(int argc, char * argv[]){
            
        	}
 
-  
+  status = listen(player_socketfd, 2);
+  if(status != 0){
+    printf("Error: Player socket failed to listen to incoming connection.\n");
+    return EXIT_FAILURE;
+}
+
   if (!(getsockname(player_socketfd, (struct sockaddr*)&buff, &len))) {
     	player_portnum = ntohs(buff.sin_port);
   }
@@ -176,13 +177,13 @@ int main(int argc, char * argv[]){
   send(socket_fd, (char*)&player_portnum, sizeof(int), 0);
   status = recv(socket_fd, (char *)&num_of_players, sizeof(int), 0);
   if(status == -1){
-  	printf("Error in receiving number of players.\n");
+  	printf("Error: Couldn't receive number of players.\n");
   	return EXIT_FAILURE;
   }
   //printf("%d\n", num_of_players);
   status = recv(socket_fd, (char*)&num_of_hops, sizeof(int), 0);
   if(status == -1){
-  	printf("Error in receiving number of hops.\n");
+  	printf("Error: Couldn't receive number of hops.\n");
   	return EXIT_FAILURE;
   }
   //printf("%d\n", num_of_hops);
@@ -193,7 +194,7 @@ int main(int argc, char * argv[]){
   printf("Connected as player %d out of %d total players\n", id, num_of_players);
   status = recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0);
   if(status == -1){
-  	printf("Error in receiving neighbour port.\n");
+  	printf("Error: Couldn't receive neighbour port.\n");
   	return EXIT_FAILURE;
   }
   //printf("%d\n", neighbour_port);
@@ -204,7 +205,6 @@ int main(int argc, char * argv[]){
 
   //Done receiving neighbour port and hostname;
   //printf("%s\n", neighbour_hostname);
-
   neighbour_detail = gethostbyname(neighbour_hostname);
   if(!neighbour_detail){
     printf("Error getting neighbour info.\n");
@@ -212,13 +212,6 @@ int main(int argc, char * argv[]){
   }
 
   
-  status = listen(player_socketfd, 2);
-  if(status != 0){
-    printf("Player socket failed to listen to incoming connection.\n");
-    return EXIT_FAILURE;
-}
-
-
   int connection_signal;
   int signal_status = recv(socket_fd, &connection_signal, sizeof(int), 0);
   if(signal_status == -1){
@@ -238,12 +231,12 @@ int main(int argc, char * argv[]){
   neighbour_socket_detail.sin_port = htons(neighbour_port);
   neighbour_socket_detail.sin_family = AF_INET;
   //neighbour_socket_detail.sin_addr.s_addr = INADDR_ANY; //needed this to fix it
-
   memcpy(&neighbour_socket_detail.sin_addr, neighbour_detail->h_addr_list[0], neighbour_detail->h_length);
 
   status = connect(right_neighbour_sfd, (struct sockaddr*)&neighbour_socket_detail, sizeof(struct sockaddr_in));
   if(status == -1){
-  	printf("Couldn't connect with right neighbour\n");
+    perror("connect()");
+    printf("Couldn't connect with right neighbour\n");
     return EXIT_FAILURE;
   }
 
@@ -313,8 +306,7 @@ int main(int argc, char * argv[]){
    		hot_potato.hop_trace[hot_potato.current_hop] = id;
    		hot_potato.hop_num--;
       hot_potato.current_hop++;
-		  
-      buffer[0] = hot_potato;
+		  buffer[0] = hot_potato;
 
 		if(!hot_potato.hop_num){
 			
@@ -331,7 +323,6 @@ int main(int argc, char * argv[]){
  	else{
 
  			int random = rand() % 2;
- 			
  			if (random == 1)
  				destination_fd = right_neighbour_sfd;
  			else if(!random)
@@ -345,9 +336,7 @@ int main(int argc, char * argv[]){
             	  neighbour_id = id - 1;
           		}
 
-
-
- 		else if(id == 0){
+        else if(id == 0){
  				if(random == 1)
  					neighbour_id = id + 1;
  				else if (!random) 
@@ -369,8 +358,7 @@ int main(int argc, char * argv[]){
 
         	send(destination_fd, (char*)&receive_signal, sizeof(int), 0);
         	recv(destination_fd, &ack, sizeof(ack), 0);
-
-        	send(destination_fd, buffer, sizeof(buffer), 0);
+          send(destination_fd, buffer, sizeof(buffer), 0);
         	recv(destination_fd, &ack, sizeof(int), 0);
 
         	continue;
