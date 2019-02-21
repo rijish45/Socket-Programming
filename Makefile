@@ -9,4 +9,6 @@ player: player.c
 	gcc -g -Wall -std=gnu99 -o $@ $<
 
 clean:
-	rm -f $(TARGETS) *~
+	rm -rf $(TARGETS) *.dSYM *~
+clobber:
+	rm -rf *.dSYM 

@@ -54,8 +54,8 @@ int main(int argc, char * argv[]){
 
 	int error = check_error_input(argv);
 
-   //port numbers 
-	int ring_master_port;
+  //port numbers 
+	//int ring_master_port = 0;
 	int player_portnum;
   int neighbour_port;
   	
@@ -115,8 +115,8 @@ int main(int argc, char * argv[]){
 		  	printf("Ring Master: host not found\n");
 		  	return EXIT_FAILURE;
 		  }
-		 else
-		  	ring_master_port = atoi(argv[2]);
+
+		  	//ring_master_port = atoi(argv[2]);
         status = getaddrinfo(argv[1], argv[2], &host_info, &host_info_list);
         assert(status != -1);
            
@@ -277,9 +277,10 @@ int main(int argc, char * argv[]){
 		reading_fd = socket_fd;
    else if(FD_ISSET(right_neighbour_sfd, &temporary_fds))
    		reading_fd = right_neighbour_sfd;
-   else if(FD_ISSET(left_neighbour_sfd, &temporary_fds))
+   else{ 
+     if(FD_ISSET(left_neighbour_sfd, &temporary_fds))
    		reading_fd = left_neighbour_sfd;
-
+   }
   
  	
  	status = recv(reading_fd, &receive_signal, sizeof(int), 0);
@@ -370,7 +371,7 @@ int main(int argc, char * argv[]){
  
   }
 
-
+  freeaddrinfo(host_info_list);
 
 }
 

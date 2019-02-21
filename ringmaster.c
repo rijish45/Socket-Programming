@@ -308,6 +308,7 @@ else{
 
  close(socket_fd); //close the TCP socket
  return EXIT_SUCCESS;
+ freeaddrinfo(hostsocket_info_list);
 
 
 }
