@@ -87,16 +87,16 @@ if(!error){
 //int port_num = atoi(argv[1]);
 int num_of_players = atoi(argv[2]);
 int num_of_hops = atoi(argv[3]);
-srand((unsigned int)time(NULL)); //seed
 int player_port_fd[num_of_players][2]; //For storing player file-descriptor and port-number
 char player_hostname[num_of_players][64]; //For storing player host-name
 
+srand((unsigned int)time(NULL)); //seed
 //Initialization
 printf("Potato Ringmaster\n");
 printf("Players = %d\n", num_of_players);
 printf("Hops = %d\n", num_of_hops);
 
-char hostname[64];
+char hostname[64]; //array to get hostname
 gethostname(hostname, sizeof(hostname)); //returns hostname for current process
 host_info = gethostbyname(hostname);
 if (!host_info) {
@@ -144,17 +144,16 @@ if(sock_status < 0){
 int i = 0;
 int port_number_player;
 int incoming_connection_fd;
-while ( i < num_of_players){
 
+while ( i < num_of_players){
 socket_addr_len = sizeof(socket_addr);
 incoming_connection_fd = accept(socket_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
 if (incoming_connection_fd == -1) {
     printf("Error: cannot accept connection on socket.\n");
     return EXIT_FAILURE;
   }
-else{
-printf("Player %d is ready to play\n", i);
-}
+else
+  printf("Player %d is ready to play\n", i);
 
 recv(incoming_connection_fd, &port_number_player, sizeof(int), 0);
 //printf("%d\n", port_number_player);
@@ -167,8 +166,7 @@ send(player_port_fd[i][0], (char *)&num_of_players, sizeof(int), 0);
 send(player_port_fd[i][0], (char*)&num_of_hops, sizeof(int), 0);
 send(player_port_fd[i][0], (char*)&i, sizeof(int), 0);
 
-
-
+//getnameinfo is the modern way to do this
 char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 if(getnameinfo((struct sockaddr *)&socket_addr, socket_addr_len, hbuf, sizeof(hbuf), sbuf,
                        sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0){
@@ -177,8 +175,8 @@ if(getnameinfo((struct sockaddr *)&socket_addr, socket_addr_len, hbuf, sizeof(hb
  //printf("host=%s, serv=%s\n", hbuf, sbuf);
  //printf("%s\n", player_hostname[i]);
 }
-i++; //increment 
 
+i++; //increment 
 }
 
 
@@ -218,7 +216,7 @@ for (int i = 0; i < num_of_players; i++){
 //Now everything is set, we can begin the game
 if(num_of_hops == 0){
   
-   game_end = 4500;
+   game_end = 4500; //Immediately shut down the game if number of hops is set to 0
    for(int i = 0; i < num_of_players; i++){
       send(player_port_fd[i][0], (char *)&(game_end),sizeof(int), 0);
     }
@@ -236,24 +234,28 @@ else{
     random_player = ((rand()) % num_of_players);
     printf("Ready to start the game, sending potato to player %d\n", random_player );
     //Send potato to the random player
-    pass_potato = 5500;
+    pass_potato = 5500; //signal for passing the potato
     send(player_port_fd[random_player][0], (char *)&pass_potato, sizeof(int), 0);
+
+    //Receive acknowledgement that the player has received the potato
     int ack = 0;
     int recv_status = recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
     if(recv_status == -1){
     	printf("Error: Didn't receive acknowledgement from player after potato was sent.\n");
     }
    
-    //Set the number of hops
+    //Set the number of hops and other potato details
 	  hot_potato.hop_num = num_of_hops;
     hot_potato.current_hop = 0;
     struct potato buffer[1];
     memset(&buffer[0], 0, sizeof(buffer[0]));
-
-    buffer[0] = hot_potato;
+    buffer[0] = hot_potato; //put the potato in the buffer
+    //Send the buffer containing the potato
     send(player_port_fd[random_player][0], buffer, sizeof(buffer), 0);
-    recv(player_port_fd[random_player][0], &ack, sizeof(int), 0);
-    int max_file_descriptor = player_port_fd[0][0];
+    recv(player_port_fd[random_player][0], &ack, sizeof(int), 0); //Receive acknowledgement
+    
+
+    int max_file_descriptor = player_port_fd[0][0]; //Required for select call
     fd_set read_file_descriptors;
     FD_ZERO(&read_file_descriptors);
 
@@ -273,7 +275,7 @@ else{
     return EXIT_FAILURE;
   }
 
-  //Receive the potato
+  //Receive the potato at the end of the game
   int index = 0;
   while(index < num_of_players){
      if (FD_ISSET(player_port_fd[index][0], &read_file_descriptors)){
@@ -289,8 +291,8 @@ else{
 
   }
 
-  hot_potato = buffer[0];
-  printf("Trace of potato:\n");
+  hot_potato = buffer[0]; //Now retrieve the potato from the buffer
+  printf("Trace of potato:\n"); //Print the trace
   for (int i = 0; i < num_of_hops; i++ ){
   	if(i != (num_of_hops -1 ))
   		printf("%d, ", hot_potato.hop_trace[i]);
@@ -299,7 +301,6 @@ else{
   }
 
   //Game is over, send signal to all players
-  
   game_end = 4500;
   for(int i = 0; i < num_of_players; i++){
       send(player_port_fd[i][0], (char *)&(game_end),sizeof(int), 0);

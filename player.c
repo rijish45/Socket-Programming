@@ -12,8 +12,8 @@
 #include <netdb.h>
 #include <time.h>
 
-#define PORTBEGIN 51015
-#define PORTEND 51097
+#define PORTBEGIN 51000
+#define PORTEND 52000
 
 //Input Error Checking
 int check_error_input(char * argv[]){
@@ -101,13 +101,9 @@ int main(int argc, char * argv[]){
       struct hostent * ring_master;
       struct hostent * neighbour_detail;
       struct hostent * player_detail;
-
-  
-      
-    
-	  memset(&host_info, 0, sizeof(host_info));
-	  host_info.ai_socktype = SOCK_STREAM;
-	  host_info.ai_family   = AF_UNSPEC;
+      memset(&host_info, 0, sizeof(host_info));
+	    host_info.ai_socktype = SOCK_STREAM;
+	    host_info.ai_family   = AF_UNSPEC;
      
       //Get ring-master information
       ring_master = gethostbyname(argv[1]); //stores the host information for ringmaster
@@ -124,6 +120,7 @@ int main(int argc, char * argv[]){
         socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
         assert(socket_fd != -1);
         //start connection
+        //printf("%s", host_info_list->ai_addr->sa_data);
         status = connect(socket_fd, host_info_list->ai_addr,host_info_list->ai_addrlen);
         assert(status != -1);
 
@@ -140,7 +137,7 @@ int main(int argc, char * argv[]){
 
    
        
-         
+       //Find a suitable port  
        for(int i = PORTBEGIN; i <= PORTEND; i++ ){
 
           player_socket_detail.sin_family = AF_INET;
@@ -159,6 +156,7 @@ int main(int argc, char * argv[]){
            
        	}
 
+//Start listening, had to switch places because of bind error
   status = listen(player_socketfd, 2);
   if(status != 0){
     printf("Error: Player socket failed to listen to incoming connection.\n");
@@ -173,32 +171,35 @@ int main(int argc, char * argv[]){
     return EXIT_FAILURE;
   }
 
-
+  //Send player port number
   send(socket_fd, (char*)&player_portnum, sizeof(int), 0);
+  //receive number of players
   status = recv(socket_fd, (char *)&num_of_players, sizeof(int), 0);
   if(status == -1){
   	printf("Error: Couldn't receive number of players.\n");
   	return EXIT_FAILURE;
   }
   //printf("%d\n", num_of_players);
+  //Receive number of hops
   status = recv(socket_fd, (char*)&num_of_hops, sizeof(int), 0);
   if(status == -1){
   	printf("Error: Couldn't receive number of hops.\n");
   	return EXIT_FAILURE;
   }
   //printf("%d\n", num_of_hops);
+  //Receive the player id
   recv(socket_fd, (char*)&id, sizeof(int), 0);
   srand((unsigned int)time(NULL) + id);
 
   //Done receiving and sending basic information
   printf("Connected as player %d out of %d total players\n", id, num_of_players);
-  status = recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0);
+  status = recv(socket_fd, (char*)&neighbour_port, sizeof(int), 0); //receive neighbour port number
   if(status == -1){
   	printf("Error: Couldn't receive neighbour port.\n");
   	return EXIT_FAILURE;
   }
   //printf("%d\n", neighbour_port);
-  status = recv(socket_fd, (char*)&neighbour_hostname, 64, MSG_WAITALL);
+  status = recv(socket_fd, (char*)&neighbour_hostname, 64, MSG_WAITALL); //use MSG_WAITALL
   if(status == -1){
   	printf("Error in receiving neighbour hostname.\n");
   }
@@ -222,6 +223,7 @@ int main(int argc, char * argv[]){
   int ack = 0;
   send(socket_fd, &ack, sizeof(int), 0);
 
+  //Do necessary setup for right neighbour
   right_neighbour_sfd = socket(AF_INET, SOCK_STREAM, 0);
   if(right_neighbour_sfd == -1){
     printf("Cannot create a socket to right neighbour.\n");
@@ -239,7 +241,7 @@ int main(int argc, char * argv[]){
     printf("Couldn't connect with right neighbour\n");
     return EXIT_FAILURE;
   }
-
+  //accept connection
   left_neighbour_sfd = accept(player_socketfd, (struct sockaddr*)&neighbour_socket_in, &len);
   if(left_neighbour_sfd == -1){
   	printf("Problem arised in accepting connection.\n");
@@ -255,6 +257,7 @@ int main(int argc, char * argv[]){
   struct potato buffer[1];
   memset(&buffer[0], 0, sizeof(buffer[0]));
 
+//set max_sfd needed for select call
  int max_sfd = socket_fd;
  if(left_neighbour_sfd > max_sfd){
  	max_sfd = left_neighbour_sfd; 
@@ -303,12 +306,14 @@ int main(int argc, char * argv[]){
    		else
    			send(reading_fd, &ack, sizeof(int), 0);
 
+      //Modify potato fields
    		hot_potato = buffer[0];
    		hot_potato.hop_trace[hot_potato.current_hop] = id;
    		hot_potato.hop_num--;
       hot_potato.current_hop++;
 		  buffer[0] = hot_potato;
 
+    //if number of hops is zero 
 		if(!hot_potato.hop_num){
 			
 			printf("I'm it.\n");
@@ -323,9 +328,9 @@ int main(int argc, char * argv[]){
 
  	else{
 
- 			int random = rand() % 2;
- 			if (random == 1)
- 				destination_fd = right_neighbour_sfd;
+ 			int random = rand() % 2; //choose between 0 and 1
+ 			if (random == 1) 
+ 				destination_fd = right_neighbour_sfd; 
  			else if(!random)
  				destination_fd = left_neighbour_sfd;
  	
@@ -371,10 +376,10 @@ int main(int argc, char * argv[]){
  
   }
 
-  freeaddrinfo(host_info_list);
+  freeaddrinfo(host_info_list); //free this, otherwise might get memory errors
 
 }
-
+  //close the socketfd
   close(player_socketfd);
   close(right_neighbour_sfd);
   close(socket_fd);
