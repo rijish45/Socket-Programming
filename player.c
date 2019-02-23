@@ -275,18 +275,18 @@ int main(int argc, char * argv[]){
  		return EXIT_FAILURE;
  	}
 
-   int reading_fd = 0;
+   int fd = 0;
    if(FD_ISSET(socket_fd, &temporary_fds))
-		reading_fd = socket_fd;
+		fd = socket_fd;
    else if(FD_ISSET(right_neighbour_sfd, &temporary_fds))
-   		reading_fd = right_neighbour_sfd;
+   		fd = right_neighbour_sfd;
    else{ 
      if(FD_ISSET(left_neighbour_sfd, &temporary_fds))
-   		reading_fd = left_neighbour_sfd;
+   		fd = left_neighbour_sfd;
    }
   
  	
- 	status = recv(reading_fd, &receive_signal, sizeof(int), 0);
+ 	status = recv(fd, &receive_signal, sizeof(int), 0);
  	if(status == -1){
  		   printf("Error in receiving the signal determining what to do. \n");
    		return EXIT_FAILURE;
@@ -297,14 +297,14 @@ int main(int argc, char * argv[]){
  	
  	else{
    
-   		send(reading_fd, &ack, sizeof(int), 0);
-   		int receive = recv(reading_fd, buffer, sizeof(buffer), MSG_WAITALL);
+   		send(fd, &ack, sizeof(int), 0);
+   		int receive = recv(fd, buffer, sizeof(buffer), MSG_WAITALL);
    		if(receive == -1){
    			printf("Error in receiving the potato\n");
    			return EXIT_FAILURE;
    		}
    		else
-   			send(reading_fd, &ack, sizeof(int), 0);
+   			send(fd, &ack, sizeof(int), 0);
 
       //Modify potato fields
    		hot_potato = buffer[0];
