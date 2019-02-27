@@ -3,7 +3,7 @@ Socket-Programming
 
 The objective of this project was to implement the Hot-Potato game using multiple **TCP** connections.
 
-1. **To run the ringmaster on a terminal**.  
+1. **To run the ringmaster on a terminal** 
 
 ```bash
 make
