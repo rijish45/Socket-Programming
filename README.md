@@ -14,5 +14,5 @@ make
 
 ```bash
 make
-./player <ringmaster host-name> <ring-master port num>
+./player <ringmaster host-name> <ringmaster port-num>
 ```
