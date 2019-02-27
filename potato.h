@@ -1,3 +1,12 @@
+/*
+
+  Rijish Ganguly
+  ECE 650 System Software Programming
+  rg239
+  
+
+*/
+
 #define MAX 512
 //Struct for the Potato
 

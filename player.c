@@ -1,3 +1,12 @@
+/*
+
+  Rijish Ganguly
+  ECE 650 System Software Programming
+  rg239
+  
+
+*/
+
 #include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>

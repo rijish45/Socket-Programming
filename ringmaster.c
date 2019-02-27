@@ -1,3 +1,11 @@
+/*
+
+  Rijish Ganguly
+  ECE 650 System Software Programming
+  rg239
+  
+
+*/
 
 #include <stdio.h>
 #include <sys/socket.h>
@@ -309,7 +317,7 @@ else{
 
  close(socket_fd); //close the TCP socket
  return EXIT_SUCCESS;
- freeaddrinfo(hostsocket_info_list);
+ freeaddrinfo(hostsocket_info_list); //Freeing this was necessary 
 
 
 }
